@@ -1,15 +1,23 @@
+import { ConsoleLogger } from '@nestjs/common';
 import { WebSocketGateway, OnGatewayConnection } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 import { WsAuthService } from 'src/core/auth/ws/ws-auth.service';
+import * as cookie from 'cookie';
 
 @WebSocketGateway({
   namespace: 'authapi',
+  cors: {
+    origin: '*',
+    credentials: true,
+  },
 })
 export class AuthGateway implements OnGatewayConnection {
+  private logger = new ConsoleLogger({ json: true });
+
   constructor(private readonly service: WsAuthService) {}
 
   async handleConnection(client: Socket) {
-    const accessToken = this.validate(client.handshake.headers.authorization);
+    const accessToken = this.validate(client.handshake.headers.cookie);
 
     if (!accessToken) {
       client.disconnect();
@@ -21,20 +29,22 @@ export class AuthGateway implements OnGatewayConnection {
       this.onError(client, error);
     }
 
-    console.log(`Client connected: ${client.id}`);
-    console.log(`Authorizing client with id: ${client.data.userId}`);
+    this.logger.log(`Client connected: ${client.id}`);
+    this.logger.log(`Authorizing client with id: ${client.data.userId}`);
   }
 
-  validate(authorization?: string): string | null {
-    if (!authorization) {
-      console.error('Authorization header is missing');
+  validate(rawCookies?: string): string | null {
+    if (!rawCookies) {
+      this.logger.error('cookies is missing');
       return null;
     }
 
-    const accessToken = authorization?.replace('Bearer ', '');
+    const cookies = cookie.parse(rawCookies);
+
+    const accessToken = cookies['access-token'];
 
     if (!accessToken) {
-      console.error('access token is missing');
+      this.logger.error('access token is missing');
       return null;
     }
 
@@ -50,7 +60,7 @@ export class AuthGateway implements OnGatewayConnection {
   }
 
   private onError(client: Socket, error: any) {
-    console.error('Authorization error:', error.message);
+    this.logger.error('Authorization error:', error.message);
     client.disconnect();
   }
 }

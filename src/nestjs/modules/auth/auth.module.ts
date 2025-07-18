@@ -4,7 +4,7 @@ import { WsAuthService } from 'src/core/auth/ws/ws-auth.service';
 import { HttpAuthService } from 'src/core/auth/http/http-auth.service';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
-import { AuthGuard } from './notification.guard';
+import { AuthGuard } from './auth.guard';
 
 @Module({
   imports: [ConfigModule.forRoot()],
