@@ -1,0 +1,30 @@
+name: socket-api
+
+services:
+  app:
+    build: .
+    ports:
+      - 3002:3002
+    volumes:
+      - .:/home/node/app
+      - ./.docker/app/logs:/var/log/socket-api
+    networks:
+      - socket_api_network
+    logging:
+      driver: 'json-file'
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.15.0
+    container_name: socket-api-logstash
+    volumes:
+      - ./.docker/logstash/config.conf:/usr/share/logstash/pipeline/logstash.conf
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - socket_api_network
+    depends_on:
+      - app
+
+networks:
+  socket_api_network:
+    name: auth_api_network
+    external: true
